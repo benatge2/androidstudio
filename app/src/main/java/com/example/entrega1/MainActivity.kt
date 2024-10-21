@@ -4,6 +4,7 @@ package com.example.entrega1
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
@@ -27,48 +28,25 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNagusia() {
-    var currentScreen by remember { mutableStateOf("Hasiera") }
-    var savedData by remember { mutableStateOf("") }
+    var currentScreen by remember { mutableStateOf("Login") }
+    var username by remember { mutableStateOf("") }
 
     when (currentScreen) {
-        "Hasiera" -> HasieraPantaila(onNavigate = { currentScreen = it })
-        "Pantaila1" -> Pantaila1(onNavigate = { currentScreen = "Hasiera" }, onSave = { savedData = it })
-        "Pantaila2" -> Pantaila2(onNavigate = { currentScreen = "Hasiera" }, savedData = savedData)
+        "Login" -> LoginScreen(onLogin = { name ->
+            username = name
+            currentScreen = "Forum"
+        })
+        "Forum" -> ForumScreen(username = username, onLogout = { currentScreen = "Login" })
     }
 }
 
 @Composable
-fun HasieraPantaila(onNavigate: (String) -> Unit) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text("Aplikazio Hasiera") }) }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(it)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Button(onClick = { onNavigate("Pantaila1") }) {
-                Text("Joan Pantaila 1-era (Gehitu Datuak)")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = { onNavigate("Pantaila2") }) {
-                Text("Joan Pantaila 2-ra (Erakutsi Datuak)")
-            }
-        }
-    }
-}
-
-@Composable
-fun Pantaila1(onNavigate: () -> Unit, onSave: (String) -> Unit) {
+fun LoginScreen(onLogin: (String) -> Unit) {
     var inputValue by remember { mutableStateOf("") }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text("Pantaila 1 - Gehitu Datuak") }) }
+        topBar = { TopAppBar(title = { Text("Login") }) }
     ) {
         Column(
             modifier = Modifier
@@ -87,47 +65,106 @@ fun Pantaila1(onNavigate: () -> Unit, onSave: (String) -> Unit) {
                 decorationBox = { innerTextField ->
                     Box(modifier = Modifier.padding(8.dp)) {
                         if (inputValue.isEmpty()) {
-                            Text("Sartu testua hemen")
+                            Text("Sartu zure izena")
                         }
                         innerTextField()
                     }
                 }
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = {
-                onSave(inputValue)
-                onNavigate()
-            }) {
-                Text("Gorde eta itzuli Hasierara")
+            Button(onClick = { onLogin(inputValue) }) {
+                Text("Sartu")
             }
         }
     }
 }
 
 @Composable
-fun Pantaila2(onNavigate: () -> Unit, savedData: String) {
+fun ForumScreen(username: String, onLogout: () -> Unit) {
+    var postText by remember { mutableStateOf("") }
+    var posts by remember { mutableStateOf(mutableListOf<Post>()) }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        topBar = { TopAppBar(title = { Text("Pantaila 2 - Erakutsi Datuak") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("Foroa") },
+                actions = {
+                    IconButton(onClick = onLogout) {
+                        Text("Irten")
+                    }
+                }
+            )
+        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(it)
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
-            Text("Gordetako Datuak:")
-            Spacer(modifier = Modifier.height(16.dp))
-            if (savedData.isNotEmpty()) {
-                Text(text = savedData)
-            } else {
-                Text("Ez dago daturik gordeta.")
+            BasicTextField(
+                value = postText,
+                onValueChange = { postText = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                decorationBox = { innerTextField ->
+                    Box(modifier = Modifier.padding(8.dp)) {
+                        if (postText.isEmpty()) {
+                            Text("Idatzi zure iruzkina")
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(onClick = {
+                if (postText.isNotEmpty()) {
+                    posts.add(Post(username, postText))
+                    postText = ""
+                }
+            }) {
+                Text("Bidali")
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onNavigate) {
-                Text("Itzuli Hasierara")
+
+            posts.forEach { post ->
+                PostView(post = post)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+data class Post(val username: String, val text: String, var likes: Int = 0)
+
+@Composable
+fun PostView(post: Post) {
+    var liked by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+            .border(1.dp, MaterialTheme.colorScheme.primary)
+            .padding(8.dp),
+        verticalArrangement = Arrangement.Top
+    ) {
+        Text(text = "${post.username}: ${post.text}")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = "${post.likes} Likes")
+            Button(onClick = {
+                if (!liked) {
+                    post.likes++
+                    liked = true
+                }
+            }) {
+                Text(if (liked) "Liked" else "Like")
             }
         }
     }
@@ -135,24 +172,16 @@ fun Pantaila2(onNavigate: () -> Unit, savedData: String) {
 
 @Preview(showBackground = true)
 @Composable
-fun HasieraPreview() {
+fun LoginScreenPreview() {
     Entrega1Theme {
-        HasieraPantaila(onNavigate = {})
+        LoginScreen(onLogin = {})
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun Pantaila1Preview() {
+fun ForumScreenPreview() {
     Entrega1Theme {
-        Pantaila1(onNavigate = {}, onSave = {})
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun Pantaila2Preview() {
-    Entrega1Theme {
-        Pantaila2(onNavigate = {}, savedData = "Adibidez: Gordetako datuak hemen agertuko dira")
+        ForumScreen(username = "User", onLogout = {})
     }
 }
