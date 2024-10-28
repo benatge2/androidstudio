@@ -31,12 +31,14 @@ fun AppNagusia() {
     var currentScreen by remember { mutableStateOf("Login") }
     var username by remember { mutableStateOf("") }
 
+    val posts = remember { mutableStateListOf<Post>() }
+
     when (currentScreen) {
         "Login" -> LoginScreen(onLogin = { name ->
             username = name
             currentScreen = "Forum"
         })
-        "Forum" -> ForumScreen(username = username, onLogout = { currentScreen = "Login" })
+        "Forum" -> ForumScreen(username = username, posts = posts, onLogout = { currentScreen = "Login" })
     }
 }
 
@@ -80,9 +82,8 @@ fun LoginScreen(onLogin: (String) -> Unit) {
 }
 
 @Composable
-fun ForumScreen(username: String, onLogout: () -> Unit) {
+fun ForumScreen(username: String, posts: MutableList<Post>, onLogout: () -> Unit) {
     var postText by remember { mutableStateOf("") }
-    var posts by remember { mutableStateOf(mutableListOf<Post>()) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -182,6 +183,9 @@ fun LoginScreenPreview() {
 @Composable
 fun ForumScreenPreview() {
     Entrega1Theme {
-        ForumScreen(username = "User", onLogout = {})
+        val posts = mutableListOf<Post>()
+        posts.add(Post("User1", "Hau iruzkin bat da!"))
+        posts.add(Post("User2", "Kaixo denei!"))
+        ForumScreen(username = "User", posts = posts, onLogout = {})
     }
 }
