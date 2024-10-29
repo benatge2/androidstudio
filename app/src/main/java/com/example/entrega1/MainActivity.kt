@@ -132,18 +132,22 @@ fun ForumScreen(username: String, posts: MutableList<Post>, onLogout: () -> Unit
             Spacer(modifier = Modifier.height(16.dp))
 
             posts.forEach { post ->
-                PostView(post = post)
+                PostView(post = post, onReply = { replyText ->
+                    post.replies.add(Post(username, replyText))
+                })
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 }
 
-data class Post(val username: String, val text: String, var likes: Int = 0)
+data class Post(val username: String, val text: String, var likes: Int = 0, val replies: MutableList<Post> = mutableListOf())
 
 @Composable
-fun PostView(post: Post) {
+fun PostView(post: Post, onReply: (String) -> Unit) {
     var liked by remember { mutableStateOf(false) }
+    var replyText by remember { mutableStateOf("") }
+    var showReplyBox by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -167,6 +171,42 @@ fun PostView(post: Post) {
             }) {
                 Text(if (liked) "Liked" else "Like")
             }
+            Button(onClick = { showReplyBox = !showReplyBox }) {
+                Text("Reply")
+            }
+        }
+
+        if (showReplyBox) {
+            BasicTextField(
+                value = replyText,
+                onValueChange = { replyText = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                decorationBox = { innerTextField ->
+                    Box(modifier = Modifier.padding(8.dp)) {
+                        if (replyText.isEmpty()) {
+                            Text("Type your reply here")
+                        }
+                        innerTextField()
+                    }
+                }
+            )
+            Button(onClick = {
+                if (replyText.isNotEmpty()) {
+                    onReply(replyText)
+                    replyText = ""
+                    showReplyBox = false
+                }
+            }) {
+                Text("Send Reply")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        post.replies.forEach { reply ->
+            PostView(post = reply, onReply = onReply)
+            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
